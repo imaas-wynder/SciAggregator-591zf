@@ -1,0 +1,97 @@
+app SciAggregator {
+  wasp: {
+    version: "^0.11.1"
+  },
+  title: "SciAggregator",
+  client: {
+    rootComponent: import { Layout } from "@client/Layout.jsx"
+  },
+  db: {
+    prisma: {
+      clientPreviewFeatures: ["extendedWhereUnique"]
+    }
+  },
+  auth: {
+    userEntity: User,
+    methods: {
+      usernameAndPassword: {}
+    },
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/"
+  }
+}
+
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import Login from "@client/pages/auth/Login.jsx"
+}
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import Signup from "@client/pages/auth/Signup.jsx"
+}
+
+entity User {=psl
+    id       Int     @id @default(autoincrement())
+    username String  @unique
+    password String
+    queries  Query[]
+psl=}
+
+entity Query {=psl
+    id          Int      @id @default(autoincrement())
+    description String
+    start_date  DateTime
+    end_date    DateTime
+    category    String
+    schedule    String
+    user        User     @relation(fields: [userId], references: [id])
+    userId      Int
+    results     Result[]
+psl=}
+
+entity Result {=psl
+    id               Int      @id @default(autoincrement())
+    title            String
+    author           String
+    publication_date DateTime
+    abstract         String
+    query            Query    @relation(fields: [queryId], references: [id])
+    queryId          Int
+psl=}
+
+action createQuery {
+  fn: import { createQuery } from "@server/actions.js",
+  entities: [User, Query]
+}
+
+action updateQuery {
+  fn: import { updateQuery } from "@server/actions.js",
+  entities: [User, Query]
+}
+
+action deleteQuery {
+  fn: import { deleteQuery } from "@server/actions.js",
+  entities: [User, Query]
+}
+
+query getUserQueries {
+  fn: import { getUserQueries } from "@server/queries.js",
+  entities: [User, Query]
+}
+
+query getQueryResults {
+  fn: import { getQueryResults } from "@server/queries.js",
+  entities: [User, Query, Result]
+}
+
+route DashboardRoute { path: "/", to: DashboardPage }
+page DashboardPage {
+  component: import { DashboardPage } from "@client/pages/DashboardPage.jsx",
+  authRequired: true
+}
+
+route QueryResultsRoute { path: "/query/:queryId", to: QueryResultsPage }
+page QueryResultsPage {
+  component: import { QueryResults } from "@client/pages/QueryResults.jsx",
+  authRequired: true
+}
